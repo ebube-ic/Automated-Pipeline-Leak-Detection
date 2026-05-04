@@ -23,5 +23,5 @@ The system relies on continuous flow monitoring using the **Mass Balance Princip
 - [ ] **Phase 4:** SCADA/Cloud Dashboard integration using Web/IIoT tools and final physical casing.
 
 ## 👨‍💻 Author
-**Ebubechukwu (Valentine) Amadi** Electrical & Electronics Engineering (I&C) | UNILAG  
+**Ebubechukwu (Valentine) Amadi** | Electrical & Electronics Engineering (I&C) | UNILAG  
 [Connect with me on LinkedIn](https://www.linkedin.com/in/ebube-ic)
