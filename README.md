@@ -32,7 +32,7 @@ During the AI training phase, the model initially struggled to differentiate bet
 
 **The Solution:** I enforced strict data collection protocols. By purging the "bouncing" data, moving to a flat surface, and re-recording the hacksaw samples focusing strictly on *smooth, continuous friction* (isolating the true physical signature of a saw), the DSP algorithm successfully extracted 399 mathematical features from the raw physics. When mapped, these **399-dimensional clusters** separated perfectly.
 
-![DSP Feature Explorer](dsp-feature-explorer.jpg)
+![DSP Feature Explorer](dsp-feature-explorer.png)
 *Fig 2: Digital Signal Processing (DSP) mapping showing clean separation of physical states after data sanitization.*
 
 * **Final Model Accuracy:** 100%
