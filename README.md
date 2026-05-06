@@ -5,6 +5,7 @@ This repository documents the ongoing development of an advanced, miniature auto
 
 ## 📐 System Architecture (P&ID)
 ![ISA Standard P&ID](Pipeline-Leak-Detection.drawio.png)
+
 *Fig 1: ISA-5.1 compliant Piping and Instrumentation Diagram detailing the dual-threat Emergency Shutdown (ESD) logic.*
 
 ## ⚙️ Core Engineering Logic
