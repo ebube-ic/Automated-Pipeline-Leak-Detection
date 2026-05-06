@@ -4,7 +4,7 @@
 This repository documents the ongoing development of an advanced, miniature automated process safety system. Designed to simulate Safety Instrumented Systems (SIS) used in the Oil & Gas industry, this hardware prototype detects both **fluid loss (leaks)** and **physical sabotage (vandalism)**. Upon detecting an anomaly, the system autonomously isolates the compromised pipeline section to prevent environmental hazards and transmits real-time telemetry to a remote SCADA dashboard.
 
 ## 📐 System Architecture (P&ID)
-![ISA Standard P&ID](Pipeline-Leak-Detection.dawio.png)
+![ISA Standard P&ID](Pipeline-Leak-Detection.drawio.png)
 *Fig 1: ISA-5.1 compliant Piping and Instrumentation Diagram detailing the dual-threat Emergency Shutdown (ESD) logic.*
 
 ## ⚙️ Core Engineering Logic
@@ -32,13 +32,13 @@ During the AI training phase, the model initially struggled to differentiate bet
 
 **The Solution:** I enforced strict data collection protocols. By purging the "bouncing" data, moving to a flat surface, and re-recording the hacksaw samples focusing strictly on *smooth, continuous friction* (isolating the true physical signature of a saw), the DSP algorithm successfully extracted 399 mathematical features from the raw physics. When mapped, these **399-dimensional clusters** separated perfectly.
 
-![DSP Feature Explorer](dsp-feature-exploer.png)
+![DSP Feature Explorer](dsp-feature-explorer.png)
 *Fig 2: Digital Signal Processing (DSP) mapping showing clean separation of physical states after data sanitization.*
 
 * **Final Model Accuracy:** 100%
 * **Resource Cost:** The optimized int8 model runs flawlessly on the ESP32, utilizing only **7% of Dynamic Memory (RAM)** and **30% of Flash Storage**.
 
-![AI Training Accuracy](ai-model-training-accuacy.png)
+![AI Training Accuracy](ai-model-training-accuracy.png)
 *Fig 3: Final validation showing a 100% accurate Confusion Matrix.*
 
 *(Note: The compiled C++ library for this model is available in this repository as `ei-pipeline-vandalism-detection-arduino-1.0.2-impulse-#1.zip`)*
