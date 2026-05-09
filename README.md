@@ -12,58 +12,54 @@ This repository documents the ongoing development of an advanced, miniature auto
 
 ### 1. Hydraulic Monitoring: Mass Balance Principle
 The system relies on continuous flow monitoring to detect internal leaks:
-* **Flow Sensor A** monitors the input flow rate.
-* **Flow Sensor B** monitors the output flow rate.
-* **The Logic Solver (ESP32)** continuously calculates: `ΔFlow = Rate A - Rate B`
-* If `ΔFlow` exceeds the safe operational threshold, the system triggers an emergency shutdown (ESD) by closing a motorized solenoid valve and cutting power to the pump.
+* **Flow Sensor A (FT-201A)**: Monitors the input flow rate.
+* **Flow Sensor B (FT-201B)**: Monitors the output flow rate.
+* **The Logic Solver (ESP32)**: Continuously calculates the delta using `ΔFlow = Rate A - Rate B`.
+* **ESD Trigger**: If `ΔFlow` exceeds the safe operational threshold, the system triggers an emergency shutdown by closing a motorized solenoid valve (SV-101) and cutting power to the pump (P-101).
 
 ### 2. Structural Monitoring: Edge AI & Vibration Analysis (TinyML)
 To detect physical tampering (e.g., oil theft via hacksaws), the system uses on-device Machine Learning (TinyML):
-* A **3-Axis Accelerometer** captures raw physical vibration data from the pipeline surface.
-* A **Digital Signal Processing (DSP)** block utilizes Fast Fourier Transform (FFT) to convert raw shaking into distinct frequency signatures.
-* A **Quantized (int8) Neural Network** running locally on the ESP32 classifies the frequency into three states: `Idle_Normal`, `Vandalism_Hacksaw`, or `Vandalism_Hammer`.
-* If vandalism is detected with >50% probability, the system immediately executes an ESD.
+* **Sensing Layer**: A 3-Axis Accelerometer (YT-301) captures raw physical vibration data from the pipeline surface.
+* **Data Processing**: The system ingests **375 raw vibration features** (static float arrays).
+* **Signal Processing**: A Digital Signal Processing (DSP) block utilizes Fast Fourier Transform (FFT) to convert raw shaking into **399 processed mathematical features**.
+* **Classification**: A Quantized (int8) Neural Network running locally on the ESP32 classifies the state into: `Idle_Normal`, `Vandalism_Hacksaw`, or `Vandalism_Hammer`.
+* **Safety Protocol**: If vandalism is detected with **>60% probability**, the system immediately executes a hardware-latched ESD.
 
 ## 🧠 Data Engineering Case Study: Model Optimization
 **🔗 [View the Full AI Model & Dataset on Edge Impulse](https://studio.edgeimpulse.com/public/986688/latest)**
 
 During the AI training phase, the model initially struggled to differentiate between a hacksaw and a hammer impact. 
 
-**The Engineering Problem:** Data confusion caused by sensor orientation. Recording the "hacksaw" motion near the edge of the testing surface introduced micro-vertical bounces. To the AI's mathematical filters, these tiny bounces on the Z-axis looked exactly like a hammer strike, causing overlapping data clusters and false classifications.
+**The Engineering Problem**: Data confusion caused by sensor orientation. Recording the "hacksaw" motion near the edge of the testing surface introduced micro-vertical bounces. These tiny bounces on the Z-axis looked exactly like a hammer strike, causing overlapping data clusters.
 
-**The Solution:** I enforced strict data collection protocols. By purging the "bouncing" data, moving to a flat surface, and re-recording the hacksaw samples focusing strictly on *smooth, continuous friction* (isolating the true physical signature of a saw), the DSP algorithm successfully extracted 399 mathematical features from the raw physics. When mapped, these **399-dimensional clusters** separated perfectly.
+**The Solution**: I enforced strict data collection protocols, purging "bouncing" data and re-recording smooth friction signatures. The resulting **399-dimensional feature clusters** separated perfectly.
 
 ![DSP Feature Explorer](dsp-feature-explorer.png)
-*Fig 2: Digital Signal Processing (DSP) mapping showing clean separation of physical states after data sanitization.*
+*Fig 2: DSP mapping showing clean separation of physical states (Idle, Hacksaw, Hammer).*
 
-* **Final Model Accuracy:** 100%
-* **Resource Cost:** The optimized int8 model runs flawlessly on the ESP32, utilizing only **7% of Dynamic Memory (RAM)** and **30% of Flash Storage**.
-
-![AI Training Accuracy](ai-model-training-accuracy.png)
-*Fig 3: Final validation showing a 100% accurate Confusion Matrix.*
-
-*(Note: The compiled C++ library for this model is available in this repository as `ei-pipeline-vandalism-detection-arduino-1.0.2-impulse-#1.zip`)*
+* **Final Model Accuracy**: 100%.
+* **On-Device Performance**: The model utilizes only **2 KB of Peak RAM** and has an inference time of **~13 ms**.
 
 ## 📡 Communications & IIoT Integration
 Industrial systems must report to central command. This prototype features dual-channel communication:
-* **Wi-Fi (Primary):** The ESP32 streams live pipeline metrics (Flow Rates, System Status, AI Probabilities) to a cloud-based SCADA dashboard for remote monitoring.
-* **GSM (Failover/Alerts):** A SIM800L module is integrated to send immediate SMS text alerts to maintenance crews if the Wi-Fi network fails during an ESD event.
+* **Wi-Fi (Primary - Blynk IoT)**: The ESP32 streams live pipeline metrics (System Status V0, AI Confidence V1) to a cloud dashboard.
+* **Remote Reset (V2)**: Authorized personnel can remotely re-arm the system after a latch via a secure Blynk virtual pin.
+* **GSM (Failover/Alerts)**: A SIM800L module is integrated for SMS text alerts if the Wi-Fi network fails during an ESD event.
 
 ## 🛠️ Hardware Stack
-* **Logic Solver:** ESP32 Microcontroller (Dual-core, Wi-Fi enabled)
-* **AI Sensor:** 3-Axis Accelerometer / Vibration Sensor
-* **Flow Sensors:** 2x YF-S201 Hall Effect Water Flow Sensors
-* **Communications:** SIM800L GSM Module
-* **Final Control Elements:** 12V Motorized Solenoid Valve (Normally Open), 12V DC Water Pump
-* **Switching:** 4-Channel 5V Relay Module
+* **Logic Solver**: ESP32 Dev Module (Dual-core, Wi-Fi enabled).
+* **AI Sensor**: MPU6050 3-Axis Accelerometer.
+* **Flow Sensors**: 2x YF-S201 Hall Effect Water Flow Sensors.
+* **Final Control Elements**: 12V Motorized Solenoid Valve, 12V DC Water Pump.
+* **Switching**: Active-High Relay Module (RY-100).
 
-## 🚀 Development Roadmap (8-Month Build)
-- [ ] **Phase 1:** Component acquisition, schematic diagramming (P&ID), and basic sensor calibration.
-- [x] **Phase 2:** Cloud AI architecture, data engineering, and training the Vandalism Detection Neural Network (100% Accuracy).
-- [ ] **Phase 3:** Breadboard prototyping, merging the compiled C++ AI library with the Mass Balance control logic.
-- [ ] **Phase 4:** Wi-Fi Dashboard and GSM SMS integration.
-- [ ] **Phase 5:** Wet testing with PVC piping and simulated leak/sabotage scenarios.
-- [ ] **Phase 6:** Final physical casing and deployment.
+## 🚀 Development Roadmap
+- [x] **Phase 1**: Component acquisition and P&ID drafting.
+- [x] **Phase 2**: Cloud AI architecture and training the Vandalism Detection Neural Network (100% Accuracy).
+- [x] **Phase 3**: Integration of Safety Latch logic and Blynk IoT Telemetry.
+- [ ] **Phase 4**: Merging Mass Balance hydraulic control with the AI library.
+- [ ] **Phase 5**: Failover testing with SIM800L GSM module.
+- [ ] **Phase 6**: Wet testing with PVC piping and final physical deployment.
 
 ## 👨‍💻 Author
 **Ebubechukwu (Valentine) Amadi** | Electrical & Electronics Engineering (I&C) | UNILAG  
