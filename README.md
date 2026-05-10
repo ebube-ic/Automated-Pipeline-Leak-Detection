@@ -11,56 +11,46 @@ This repository documents the ongoing development of an advanced, miniature auto
 ## ⚙️ Core Engineering Logic
 
 ### 1. Hydraulic Monitoring: Mass Balance Principle
-The system relies on continuous flow monitoring to detect internal leaks:
-* **Flow Sensor A (FT-201A)**: Monitors the input flow rate.
+The system relies on continuous flow monitoring to detect internal leaks using dual **YF-S201 Hall-Effect Water Flow Sensors**. 
+* **Flow Sensor A (FT-201A)**: Monitors the input flow rate via an interrupt-driven digital pin.
 * **Flow Sensor B (FT-201B)**: Monitors the output flow rate.
+* **The Mathematics**: The ESP32 calculates flow utilizing the standard sensor conversion rate: `Flow Rate (L/min) = Pulse Frequency / 7.5`.
 * **The Logic Solver (ESP32)**: Continuously calculates the delta using `ΔFlow = Rate A - Rate B`.
 * **ESD Trigger**: If `ΔFlow` exceeds the safe operational threshold, the system triggers an emergency shutdown by closing a motorized solenoid valve (SV-101) and cutting power to the pump (P-101).
 
 ### 2. Structural Monitoring: Edge AI & Vibration Analysis (TinyML)
 To detect physical tampering (e.g., oil theft via hacksaws), the system uses on-device Machine Learning (TinyML):
-* **Sensing Layer**: A 3-Axis Accelerometer (YT-301) captures raw physical vibration data from the pipeline surface.
-* **Data Processing**: The system ingests **375 raw vibration features** (static float arrays).
+* **Sensing Layer**: An **MPU6050 3-Axis Accelerometer (YT-301)** communicates via I2C protocol to capture raw physical vibration data from the pipeline surface.
 * **Signal Processing**: A Digital Signal Processing (DSP) block utilizes Fast Fourier Transform (FFT) to convert raw shaking into **399 processed mathematical features**.
 * **Classification**: A Quantized (int8) Neural Network running locally on the ESP32 classifies the state into: `Idle_Normal`, `Vandalism_Hacksaw`, or `Vandalism_Hammer`.
 * **Safety Protocol**: If vandalism is detected with **>60% probability**, the system immediately executes a hardware-latched ESD.
 
+### 3. Fault Tolerance & Non-Blocking IIoT Architecture
+A critical feature of this SIS is its resistance to network failures (Single Point of Failure elimination):
+* **Offline Edge Mode**: The ESP32 utilizes an asynchronous, non-blocking network stack. If the Wi-Fi or SCADA connection drops, the microcontroller degrades into an autonomous state, continuing to execute the 14 ms deterministic safety loop without freezing.
+* **Remote Simulation Injection (Dry Rig)**: For demonstration and testing, the system features a dynamic memory buffer that allows operators to inject synthetic threat data (Hacksaw/Hammer profiles) remotely via the SCADA dashboard to verify ESD protocols without physical damage.
+
 ## 🧠 Data Engineering Case Study: Model Optimization
 **🔗 [View the Full AI Model & Dataset on Edge Impulse](https://studio.edgeimpulse.com/public/986688/latest)**
 
-During the AI training phase, the model initially struggled to differentiate between a hacksaw and a hammer impact. 
-
-**The Engineering Problem**: Data confusion caused by sensor orientation. Recording the "hacksaw" motion near the edge of the testing surface introduced micro-vertical bounces. These tiny bounces on the Z-axis looked exactly like a hammer strike, causing overlapping data clusters.
-
-**The Solution**: I enforced strict data collection protocols, purging "bouncing" data and re-recording smooth friction signatures. The resulting **399-dimensional feature clusters** separated perfectly.
+During the AI training phase, the model initially struggled to differentiate between a hacksaw and a hammer impact due to micro-vertical bounces mimicking hammer strikes. By enforcing strict data sanitization protocols, the continuous friction signature of the saw was isolated. 
 
 ![DSP Feature Explorer](dsp-feature-explorer.png)
 *Fig 2: DSP mapping showing clean separation of physical states (Idle, Hacksaw, Hammer).*
 
 * **Final Model Accuracy**: 100%.
-* **On-Device Performance**: The model utilizes only **2 KB of Peak RAM** and has an inference time of **~13 ms**.
+* **On-Device Performance**: The end-to-end inference cycle runs in just **14 ms**, utilizing a peak dynamic memory of **2.2 KB**.
 
-## 📡 Communications & IIoT Integration
-Industrial systems must report to central command. This prototype features dual-channel communication:
-* **Wi-Fi (Primary - Blynk IoT)**: The ESP32 streams live pipeline metrics (System Status V0, AI Confidence V1) to a cloud dashboard.
-* **Remote Reset (V2)**: Authorized personnel can remotely re-arm the system after a latch via a secure Blynk virtual pin.
+## 📡 Communications & SCADA Integration
+* **Wi-Fi (Primary - Blynk IoT)**: Streams live pipeline metrics, Alarm Status (V0), and AI Confidence (V1) to a mobile dashboard.
+* **Remote Reset (V2)**: Authorized personnel can remotely re-arm the system after a latch via a secure Human-in-the-Loop (HITL) button.
 * **GSM (Failover/Alerts)**: A SIM800L module is integrated for SMS text alerts if the Wi-Fi network fails during an ESD event.
 
-## 🛠️ Hardware Stack
-* **Logic Solver**: ESP32 Dev Module (Dual-core, Wi-Fi enabled).
-* **AI Sensor**: MPU6050 3-Axis Accelerometer.
-* **Flow Sensors**: 2x YF-S201 Hall Effect Water Flow Sensors.
-* **Final Control Elements**: 12V Motorized Solenoid Valve, 12V DC Water Pump.
-* **Switching**: Active-High Relay Module (RY-100).
-
-## 🚀 Development Roadmap
-- [x] **Phase 1**: Component acquisition and P&ID drafting.
-- [x] **Phase 2**: Cloud AI architecture and training the Vandalism Detection Neural Network (100% Accuracy).
-- [x] **Phase 3**: Integration of Safety Latch logic and Blynk IoT Telemetry.
-- [ ] **Phase 4**: Merging Mass Balance hydraulic control with the AI library.
-- [ ] **Phase 5**: Failover testing with SIM800L GSM module.
-- [ ] **Phase 6**: Wet testing with PVC piping and final physical deployment.
-
-## 👨‍💻 Author
-**Ebubechukwu (Valentine) Amadi** | Electrical & Electronics Engineering (I&C) | UNILAG  
-[Connect with me on LinkedIn](https://www.linkedin.com/in/ebube-ic)
+## 🚀 Installation & Setup
+1. Download the `Pipeline_SIS_LogicSolver.ino` file and open it in the Arduino IDE.
+2. Install the exported `.zip` library from your Edge Impulse project.
+3. **Security Note:** You must insert your own Wi-Fi credentials and Blynk Auth Token at the top of the script:
+   ```cpp
+   #define BLYNK_AUTH_TOKEN "YOUR_BLYNK_AUTH_TOKEN_HERE"
+   char ssid[] = "YOUR_WIFI_SSID_HERE";
+   char pass[] = "YOUR_WIFI_PASSWORD_HERE";
