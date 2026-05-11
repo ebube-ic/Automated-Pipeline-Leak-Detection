@@ -1,11 +1,11 @@
 /*
- * ESP32 AI SIS Dry Rig - Pipeline Vandalism Detection
- * Logic Solver Verification Phase
+ * ESP32 Edge AI SIS - Pipeline Vandalism Detection
+ * Featuring: Non-Blocking IIoT, Remote Threat Injection, and Color-Coded Telemetry
  */
 
-#define BLYNK_TEMPLATE_ID "YOUR_BLYNK_TEMPLATE_ID_HERE"
+#define BLYNK_TEMPLATE_ID "TMPL2DjRQVc30"
 #define BLYNK_TEMPLATE_NAME "Pipeline SIS Dashboard"
-#define BLYNK_AUTH_TOKEN "YOUR_BLYNK_AUTH_TOKEN_HERE"
+#define BLYNK_AUTH_TOKEN "YOUR_BLYNK_AUTH_TOKEN_HERE" // <-- INSERT YOUR TOKEN
 
 #include <Pipeline-Vandalism-Detection_inferencing.h> // Ensure this matches your ZIP name
 #include <WiFi.h>
@@ -13,48 +13,60 @@
 #include <BlynkSimpleEsp32.h>
 
 char auth[] = BLYNK_AUTH_TOKEN;
-char ssid[] = "YOUR_WIFI_SSID_HERE";
-char pass[] = "YOUR_WIFI_PASSWORD_HERE";
+char ssid[] = "YOUR_WIFI_SSID_HERE";       // <-- INSERT YOUR WIFI NAME
+char pass[] = "YOUR_WIFI_PASSWORD_HERE";   // <-- INSERT YOUR WIFI PASSWORD
 
-bool is_system_latched = false; // New global flag
+bool is_system_latched = false;
+int system_mode = 0; // 0 = Standby (Default), 1 = Idle, 2 = Hacksaw, 3 = Hammer
 
 // Hardware Pins
 const int GREEN_LED = 2; 
 const int RED_LED = 4;   
 const int RELAY_PIN = 5; 
 
-// --- GLOBAL DATA ARRAYS ---
-float features_idle[] = {
-    0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.3000, 0.3000, 0.0000, 10.2000, 0.3000, 0.0000, 10.2000, 0.3000, 0.0000, 10.2000, 0.3000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.3000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.2000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.0000, 10.3000, 0.2000, 0.1000, 10.3000
-};
-float features_hacksaw[] = {
-    -0.7000, 2.9000, 9.9000, -0.7000, 3.0000, 10.0000, -0.8000, 3.1000, 10.0000, -0.9000, 3.0000, 10.1000, -0.9000, 2.8000, 10.1000, -0.9000, 2.8000, 10.1000, -0.9000, 1.9000, 10.1000, -0.8000, 1.0000, 10.2000, -0.6000, 0.1000, 10.2000, 0.1000, -0.9000, 10.4000, 0.2000, -1.8000, 10.4000, 0.2000, -1.8000, 10.4000, 0.9000, -2.6000, 10.4000, 1.1000, -2.7000, 10.3000, 1.1000, -2.7000, 10.3000, 1.1000, -2.7000, 10.3000, 1.0000, -2.8000, 10.3000, 0.9000, -2.8000, 10.3000, 0.9000, -2.8000, 10.5000, 0.9000, -2.8000, 10.5000, 0.9000, -2.7000, 10.6000, 1.0000, -1.9000, 10.5000, 1.0000, -1.2000, 10.5000, 0.9000, -0.3000, 10.4000, 0.9000, -0.3000, 10.4000, 0.7000, 0.6000, 10.4000, 0.5000, 1.4000, 10.3000, 0.4000, 2.2000, 10.3000, 0.2000, 2.4000, 10.3000, 0.2000, 2.4000, 10.3000, 0.1000, 3.1000, 10.3000, -0.1000, 3.1000, 10.3000, -0.2000, 3.2000, 10.2000, -0.3000, 3.1000, 10.2000, -0.3000, 3.1000, 10.2000, -0.3000, 2.3000, 10.2000, -0.2000, 1.5000, 10.2000, -0.2000, 1.3000, 10.2000, -0.1000, 0.4000, 10.2000, -0.1000, 0.4000, 10.2000, -0.2000, -0.4000, 10.2000, -0.2000, -1.3000, 10.2000, 0.0000, -2.2000, 10.2000, 0.0000, -2.2000, 10.2000, 0.7000, -2.9000, 10.2000, 0.8000, -2.9000, 10.2000, 0.9000, -3.0000, 10.2000, 0.9000, -3.0000, 10.2000, 0.9000, -3.0000, 10.2000, 0.9000, -2.9000, 10.2000, 0.9000, -2.8000, 10.2000, 0.8000, -2.0000, 10.2000, 0.8000, -2.0000, 10.2000, 0.8000, -0.9000, 10.2000, 0.7000, -0.2000, 10.2000, 0.7000, 0.6000, 10.2000, 0.6000, 1.4000, 10.2000, 0.5000, 2.2000, 10.1000, 0.5000, 2.2000, 10.1000, 0.4000, 2.4000, 10.1000, 0.3000, 3.2000, 10.1000, 0.2000, 3.3000, 10.2000, 0.0000, 3.3000, 10.2000, 0.0000, 3.3000, 10.2000, 0.0000, 3.3000, 10.2000, -0.8000, 2.3000, 10.2000, -0.8000, 2.3000, 10.2000, -0.8000, 1.2000, 10.2000, -0.8000, 0.3000, 10.2000, -0.7000, -0.7000, 10.2000, 0.1000, -1.6000, 10.2000, 0.1000, -1.6000, 10.2000, 0.2000, -1.8000, 10.1000, 1.1000, -2.6000, 10.2000, 1.2000, -2.6000, 10.2000, 1.2000, -2.7000, 10.2000, 1.2000, -2.7000, 10.2000, 1.1000, -2.8000, 10.2000, 1.1000, -2.8000, 10.1000, 1.0000, -2.7000, 10.1000, 1.0000, -2.0000, 10.1000, 1.0000, -2.0000, 10.1000, 0.9000, -1.8000, 10.1000, 0.9000, -0.9000, 10.2000, 0.8000, 0.0000, 10.2000, 0.8000, 0.8000, 10.2000, 0.7000, 1.6000, 10.1000, 0.7000, 1.6000, 10.1000, 0.7000, 1.8000, 10.1000, 0.7000, 1.8000, 10.1000, 0.5000, 2.5000, 10.1000, -0.1000, 2.6000, 10.1000, -0.3000, 2.6000, 10.2000, -0.4000, 2.7000, 10.2000, -0.5000, 2.6000, 10.2000, -0.5000, 2.6000, 10.2000, -0.5000, 2.5000, 10.2000, -0.5000, 1.8000, 10.2000, -0.4000, 0.8000, 10.2000, -0.4000, 0.8000, 10.2000, -0.3000, 0.0000, 10.2000, -0.2000, -0.9000, 10.2000, 0.6000, -1.6000, 10.2000, 0.7000, -1.8000, 10.1000, 0.8000, -2.5000, 10.1000, 0.8000, -2.5000, 10.1000, 0.8000, -2.5000, 10.1000, 0.8000, -2.6000, 10.1000, 0.7000, -2.6000, 10.1000, 0.6000, -2.6000, 10.1000, 0.6000, -2.6000, 10.1000, 0.5000, -2.4000, 10.1000, 0.5000, -1.6000, 10.1000, 0.5000, -1.4000, 10.1000, 0.5000, -1.4000, 10.1000, 0.6000, -0.5000, 10.2000, 0.6000, 0.2000, 10.2000, 0.7000, 1.0000, 10.2000, 0.7000, 1.0000, 10.2000, 0.6000, 1.7000, 10.2000, 0.5000, 2.5000, 10.2000, 0.3000, 2.6000, 10.2000, 0.2000, 2.7000, 10.2000, 0.2000, 2.7000, 10.2000, 0.1000, 2.8000, 10.2000
-};
-float features_hammer[] = {
-    20.4000, -0.3000, 3.6000, 20.0000, -3.7000, 3.6000, 13.0000, -2.4000, 1.1000, 7.3000, 0.5000, 3.1000, 1.3000, 4.9000, -0.6000, 1.3000, 4.9000, -0.6000, -4.7000, 7.0000, -3.9000, -9.7000, 7.9000, -4.1000, -13.0000, 8.5000, -5.4000, -14.3000, 8.5000, -5.3000, -14.3000, 8.5000, -5.3000, -14.4000, 7.8000, -2.2000, -11.7000, 7.6000, 0.3000, -11.7000, 7.6000, 0.3000, -8.2000, 6.6000, 1.3000, -5.5000, 5.8000, 2.0000, -3.7000, 5.0000, 1.9000, -2.1000, 4.2000, 1.2000, -2.1000, 4.2000, 1.2000, 0.1000, 3.2000, 1.2000, 4.6000, 2.4000, 1.9000, 11.6000, 1.5000, 3.0000, 17.0000, 0.4000, 4.5000, 17.0000, 0.4000, 4.5000, 15.9000, -2.4000, 5.4000, 4.3000, -0.7000, -0.2000, -2.8000, 4.2000, -3.9000, -6.0000, 5.2000, -3.9000, -6.0000, 5.2000, -3.9000, -11.2000, 7.6000, -2.3000, -15.5000, 8.4000, -2.2000, -16.2000, 8.3000, -3.2000, -13.9000, 8.2000, -3.1000, -10.6000, 7.4000, -0.9000, -10.6000, 7.4000, -0.9000, -7.4000, 6.5000, 0.7000, -4.5000, 6.4000, 0.8000, -2.6000, 6.2000, 0.8000, -2.6000, 6.2000, 0.8000, -1.7000, 5.5000, 0.0000, -1.7000, 5.3000, -0.2000, -1.6000, 5.2000, -0.2000, -1.6000, 5.2000, -0.2000, -0.8000, 5.3000, 0.6000, -0.6000, 6.6000, 1.5000, -0.6000, 8.2000, 2.3000, -0.6000, 8.2000, 2.3000, -2.5000, 9.0000, 2.3000, -3.4000, 9.8000, 2.3000, -3.3000, 9.7000, 2.3000, 1.0000, 8.3000, 3.2000, 1.0000, 8.3000, 3.2000, 6.8000, 6.1000, 4.0000, 10.0000, 2.9000, 4.8000, 3.8000, -0.3000, 1.2000, -5.0000, 3.3000, 3.7000, -5.0000, 4.4000, 2.2000, -5.0000, 4.4000, 2.2000, -7.0000, 6.2000, -0.5000, -11.6000, 7.3000, -2.9000, -15.2000, 8.2000, -5.4000, -15.9000, 8.2000, -5.4000, -15.9000, 8.2000, -5.4000, -15.9000, 8.2000, -5.4000, -10.0000, 6.6000, 1.1000, -5.8000, 5.8000, 2.1000, -5.8000, 5.8000, 2.1000, -1.7000, 4.8000, 2.9000, 2.1000, 3.7000, 3.0000, 6.8000, 2.7000, 3.0000, 6.8000, 2.7000, 3.0000, 13.4000, 1.5000, 4.1000, 17.9000, -0.2000, 4.9000, 15.8000, -3.1000, 5.6000, 3.6000, 4.6000, -2.2000, 3.6000, 4.6000, -2.2000, -2.6000, 6.2000, 0.6000, -4.1000, 8.3000, -2.3000, -7.5000, 9.0000, -3.5000, -10.2000, 9.0000, -5.8000, -10.2000, 9.0000, -5.8000, -11.1000, 8.8000, -5.9000, -12.1000, 8.1000, -4.2000, -12.0000, 7.3000, -1.7000, -10.1000, 7.2000, -0.1000, -8.1000, 6.4000, 0.1000, -8.1000, 6.4000, 0.1000, -5.8000, 5.6000, 0.8000, -5.8000, 5.6000, 0.8000, -3.3000, 4.6000, 1.0000, -0.2000, 3.7000, 1.9000, 5.4000, 2.7000, 2.7000, 13.2000, 1.8000, 3.7000, 18.5000, -0.8000, 5.8000, 18.5000, -0.8000, 5.8000, 16.4000, -5.1000, 6.7000, 4.6000, 1.9000, -0.1000, 0.1000, 2.7000, 2.0000, -5.0000, 5.1000, -3.7000, -5.0000, 5.1000, -3.7000, -10.5000, 6.1000, -4.9000, -13.1000, 6.7000, -6.0000, -13.9000, 6.6000, -5.9000, -13.9000, 6.6000, -5.9000, -13.9000, 5.8000, -2.4000, -12.3000, 5.7000, 0.7000, -10.0000, 5.5000, 1.7000, -7.9000, 4.9000, 1.8000, -7.9000, 4.9000, 1.8000, -6.1000, 4.1000, 1.7000, -4.0000, 3.3000, 1.6000, -1.0000, 2.6000, 1.6000, -1.0000, 2.6000, 1.6000, -1.0000, 2.6000, 1.6000, 4.5000, 1.8000, 1.8000, 12.1000, 1.6000, 2.5000, 14.1000, -3.9000, 4.7000, 2.3000, 1.3000, -1.1000, 2.3000, 1.3000, -1.1000, -1.6000, 2.5000, -1.6000, -9.0000, 5.4000, -3.4000, -9.0000, 5.4000, -3.4000, -15.6000, 6.2000, -3.4000, -18.1000, 6.1000, -3.3000, -18.0000, 5.2000, 0.2000
-};
+// --- DYNAMIC DATA BUFFERS ---
+// -> PASTE YOUR FULL 375-FLOAT ARRAYS HERE <-
+float features_idle[375]    = { 0.2000, 0.0000, 10.2000 /* ... paste rest of idle data ... */ }; 
+float features_hacksaw[375] = { -0.7000, 2.9000, 9.9000 /* ... paste rest of hacksaw data ... */ };
+float features_hammer[375]  = { 20.4000, -0.3000, 3.6000 /* ... paste rest of hammer data ... */ };
 
-float current_features[375]; // This is the "Working Buffer" the AI reads
+// This is the active buffer the AI reads from
+float current_features[375]; 
 
-// This function runs whenever you change the Menu on Blynk
+// BLYNK V3: Remote Simulation Injector (Menu Widget)
 BLYNK_WRITE(V3) {
-  int selection = param.asInt();
+  system_mode = param.asInt(); // Update the global mode variable
   
-  if (selection == 0) {
-    memcpy(current_features, features_idle, sizeof(current_features));
-    Serial.println(">>> Mode: IDLE");
-  } 
-  else if (selection == 1) {
-    memcpy(current_features, features_hacksaw, sizeof(current_features));
-    Serial.println(">>> Mode: HACKSAW");
-  } 
-  else if (selection == 2) {
-    memcpy(current_features, features_hammer, sizeof(current_features));
-    Serial.println(">>> Mode: HAMMER");
+  if (system_mode == 0) {
+    Serial.println(">>> System: STANDBY MODE (AI Paused & Latch Cleared)");
+  } else {
+    // Restore the normal label when AI is active
+    Blynk.setProperty(V1, "label", "AI Confidence Score"); 
+    
+    if (system_mode == 1) {
+      memcpy(current_features, features_idle, sizeof(current_features));
+      Serial.println(">>> Simulation: IDLE MODE (AI Active)");
+    } else if (system_mode == 2) {
+      memcpy(current_features, features_hacksaw, sizeof(current_features));
+      Serial.println(">>> Simulation: HACKSAW MODE (AI Active)");
+    } else if (system_mode == 3) {
+      memcpy(current_features, features_hammer, sizeof(current_features));
+      Serial.println(">>> Simulation: HAMMER MODE (AI Active)");
+    }
   }
 }
 
-// Updated data getter to use the dynamic buffer
+// BLYNK V2: Remote System Reset (Push Button)
+BLYNK_WRITE(V2) {
+  int resetReq = param.asInt();
+  if (resetReq == 1 && is_system_latched) {
+    Serial.println("Re-arming system from SCADA...");
+    delay(1000);
+    ESP.restart(); // Clear buffers and reboot
+  }
+}
+
+// Memory pointer for Edge Impulse Inference
 int raw_feature_get_data(size_t offset, size_t length, float *out_ptr) {
     memcpy(out_ptr, current_features + offset, length * sizeof(float));
     return 0;
@@ -62,23 +74,25 @@ int raw_feature_get_data(size_t offset, size_t length, float *out_ptr) {
 
 void setup() {
     Serial.begin(115200);
-    delay(200); // Give Serial time to start
+    delay(1000); 
     Serial.println("System Initializing...");
 
     pinMode(GREEN_LED, OUTPUT);
     pinMode(RED_LED, OUTPUT);
     pinMode(RELAY_PIN, OUTPUT);
 
-
-    // Initial State: System Healthy
+    // Initial State: Safe Operations
     digitalWrite(GREEN_LED, HIGH);
-    digitalWrite(RELAY_PIN, HIGH); // Relay disengaged (Pump OFF)
-    digitalWrite(RED_LED, LOW);
+    digitalWrite(RELAY_PIN, LOW); // Relay disengaged initially
+    digitalWrite(RED_LED, HIGH);
 
+    // Initialize with Idle data to prevent immediate trip
+    memcpy(current_features, features_idle, sizeof(current_features));
+
+    // --- NON-BLOCKING WIFI CONNECTION ---
     Serial.println("Connecting to WiFi...");
     WiFi.begin(ssid, pass);
     
-    // Try to connect for 10 seconds, then give up and move on
     int wifi_timeout = 0;
     while (WiFi.status() != WL_CONNECTED && wifi_timeout < 20) {
         delay(500);
@@ -89,9 +103,11 @@ void setup() {
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("\nWiFi Connected!");
         Blynk.config(auth);   // Setup Blynk without blocking
-        Blynk.connect(3000);  // Try to reach Blynk server for 3 seconds
+        Blynk.connect(3000);  // 3-second timeout
         if(Blynk.connected()){
-            Serial.println("Blynk Connected! System Ready.");
+           Serial.println("Blynk SCADA Connected! System Ready.");
+           // Forces the ESP32 to download the current menu selection on boot
+           Blynk.syncVirtual(V3); 
         }
     } else {
         Serial.println("\n⚠️ WiFi Failed. Running in OFFLINE EDGE MODE.");
@@ -99,65 +115,75 @@ void setup() {
 }
 
 void loop() {
-    // Only process cloud data if connected
+    // Only process cloud data if connected (Prevents Freezing)
     if (Blynk.connected()) {
         Blynk.run();
     }
     
-    // ... AI Inference Code ...
+    // THE PAUSE BUTTON: If in Standby (0), skip the AI and hardware updates!
+    if (system_mode == 0) {
+        // STANDBY DEFAULT STATE (Both LEDs Steady ON)
+        digitalWrite(GREEN_LED, HIGH);
+        digitalWrite(RED_LED, HIGH);
+        digitalWrite(RELAY_PIN, LOW); 
+        
+        Blynk.setProperty(V0, "color", "#FFFFFF"); // Set LED to White for Standby
+        Blynk.virtualWrite(V0, 255);              
+        
+        // Change the title label, and zero out the math
+        Blynk.setProperty(V1, "label", "SYSTEM STANDBY (AI PAUSED)"); 
+        Blynk.virtualWrite(V1, 0); 
+        return; // This kicks the ESP32 back to the top of the loop
+    }
+
     ei_impulse_result_t result = { 0 };
     signal_t features_signal;
     features_signal.total_length = sizeof(current_features) / sizeof(current_features[0]);
     features_signal.get_data = &raw_feature_get_data;
 
-    // 1. Run Inference
+    // 1. Run AI Inference
     EI_IMPULSE_ERROR res = run_classifier(&features_signal, &result, false);
     if (res != EI_IMPULSE_OK) return;
 
-    // 2. Variables to track what we found
-    bool is_vandalism = false;
+    // 2. Track highest confidence label
     float high_score = 0;
     char* detected_label = "";
 
-    // 3. Scan the results
     Serial.println("--- AI Analysis ---");
     for (uint16_t i = 0; i < EI_CLASSIFIER_LABEL_COUNT; i++) {
         Serial.print(result.classification[i].label);
         Serial.print(": ");
         Serial.println(result.classification[i].value);
 
-        // Check if this label is the "winner"
         if (result.classification[i].value > high_score) {
             high_score = result.classification[i].value;
             detected_label = (char*)result.classification[i].label;
         }
     }
 
-    // 4. LOGIC SOLVER: Decide to Shut Down or Keep Running
-    // We trigger if it's NOT idle AND confidence is over 60%
+    // 3. LOGIC SOLVER: Decide to Shut Down or Keep Running
+    // Triggers if it's NOT idle AND confidence > 60%
     if (strcmp(detected_label, "idle_normal") != 0 && high_score > 0.60) {
         is_system_latched = true;
         
-        // 1. TRIGGER PHYSICAL ESD
+        // A. TRIGGER PHYSICAL ESD (Safe State)
         digitalWrite(GREEN_LED, LOW);
         digitalWrite(RED_LED, HIGH);
-        digitalWrite(RELAY_PIN, LOW); // Safe State
+        digitalWrite(RELAY_PIN, LOW); 
 
-        // 2. UPDATE BLYNK DASHBOARD (Only if online)
-            if (Blynk.connected()) {
-                // 2. UPDATE BLYNK DASHBOARD COLOR TO RED
-                Blynk.setProperty(V0, "color", "#D3435C"); // Set LED to Red
-                Blynk.virtualWrite(V0, 255);              // Turn LED ON (Full brightness)
-                Blynk.virtualWrite(V1, high_score); // Log the violation confidence
-                Blynk.logEvent("vandalism_detected", String("Alert: ") + detected_label);
-            }
+        // B. UPDATE BLYNK DASHBOARD (Color Coded Red)
+        if (Blynk.connected()) {
+            Blynk.setProperty(V0, "color", "#D3435C"); // Set LED to Red
+            Blynk.virtualWrite(V0, 255);              
+            Blynk.virtualWrite(V1, high_score); 
+            Blynk.logEvent("vandalism_detected", String("Alert: ") + detected_label);
+        }
 
-        // 3. ENTER SAFETY LATCH
+        // C. ENTER SAFETY LATCH
         while(is_system_latched) {
-            if (Blynk.connected()) {
-                Blynk.run(); // Stay connected to allow Remote Reset
-            }
-            // ... Blink the physical Red LED ...
+            if (Blynk.connected()) { Blynk.run(); } // Listen for remote reset
+            
+            // Blink the physical Red LED and Virtual LED
             digitalWrite(RED_LED, LOW); delay(200);
             digitalWrite(RED_LED, HIGH); delay(200);
         }
@@ -166,19 +192,13 @@ void loop() {
         digitalWrite(GREEN_LED, HIGH);
         digitalWrite(RELAY_PIN, HIGH); // ENERGIZE RELAY (PUMP ON)
         digitalWrite(RED_LED, LOW);
-
-        // UPDATE BLYNK DASHBOARD COLOR TO GREEN
-        Blynk.setProperty(V0, "color", "#23C48E"); // Set LED to Green
-        Blynk.virtualWrite(V0, 255);              // Keep LED ON (Green)
-        Blynk.virtualWrite(V1, high_score);
+        
+        // Normal Operations (Color Coded Green)
+        if (Blynk.connected()) {
+            Blynk.setProperty(V0, "color", "#23C48E"); // Set LED to Green
+            Blynk.virtualWrite(V0, 255);               
+            Blynk.virtualWrite(V1, high_score);
+        }
     }
-}
-
-BLYNK_WRITE(V2) {
-  int resetReq = param.asInt();
-  if (resetReq == 1 && is_system_latched) {
-    Serial.println("Re-arming system from Blynk...");
     delay(1000);
-    ESP.restart(); // Simplest way to clear all buffers and restart clean
-  }
 }
